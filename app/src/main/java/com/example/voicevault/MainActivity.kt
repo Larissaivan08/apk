@@ -626,6 +626,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun stopServiceRecording() {
         if (awaitingRecorderStart) return
+        // O serviço descarta um STOP muito próximo do início. Se a tela já mostrasse
+        // "parado" nesse caso, ficaria fora de sincronia com a gravação que continua.
+        val running = LastRecord.result as? LastRecord.Recording
+        if (running != null &&
+            SystemClock.elapsedRealtime() - running.startedElapsedMs < RecorderService.MIN_STOP_AGE_MS
+        ) {
+            toast("Aguarde um instante para parar a gravação.")
+            return
+        }
         startService(Intent(this, RecorderService::class.java).setAction(RecorderService.ACTION_STOP))
         // Aguarda o serviço parar (onDestroy grava LastRecord.Stopped) e então salva.
         updateRecordingUi(false)

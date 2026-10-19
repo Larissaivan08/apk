@@ -50,7 +50,7 @@ class RecorderService : Service() {
         when (intent?.action) {
             ACTION_STOP -> {
                 val age = SystemClock.elapsedRealtime() - startedElapsed
-                if (recorder != null && startedElapsed > 0L && age < 1200L) {
+                if (recorder != null && startedElapsed > 0L && age < MIN_STOP_AGE_MS) {
                     Log.w("GravadorSmart", "Ignorando STOP prematuro: ${age}ms")
                     return START_STICKY
                 }
@@ -270,6 +270,13 @@ class RecorderService : Service() {
         const val ACTION_STOP = "com.example.voicevault.STOP"
         const val ACTION_PAUSE = "com.example.voicevault.PAUSE"
         const val ACTION_RESUME = "com.example.voicevault.RESUME"
+
+        /**
+         * Um STOP que chega antes disso é descartado pelo serviço (protege contra comandos
+         * perdidos). A tela usa o mesmo valor para nem enviar o comando nem mudar a
+         * interface, mantendo os dois lados em sincronia.
+         */
+        const val MIN_STOP_AGE_MS = 1200L
 
         fun hasMicPermission(ctx: Context) =
             ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.RECORD_AUDIO) ==

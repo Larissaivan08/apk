@@ -14,6 +14,7 @@ import com.example.voicevault.db.AudioFormat
 import com.example.voicevault.io.Exporter
 import com.example.voicevault.io.AudioStore
 import com.example.voicevault.ui.RecordingAdapter
+import com.example.voicevault.ui.applySystemBarInsets
 import kotlinx.coroutines.launch
 
 /** Tela de reprodução: play/pause, seek, renomear, mover e excluir. */
@@ -36,6 +37,7 @@ class PlayerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         b = ActivityPlayerBinding.inflate(layoutInflater)
         setContentView(b.root)
+        b.root.applySystemBarInsets()
 
         recordingId = intent.getLongExtra(EXTRA_ID, -1)
         if (recordingId <= 0) { finish(); return }

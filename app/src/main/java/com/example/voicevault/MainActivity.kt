@@ -36,6 +36,7 @@ import com.example.voicevault.db.Recording
 import com.example.voicevault.io.AudioStore
 import com.example.voicevault.io.MicLevel
 import com.example.voicevault.ui.RecordingAdapter
+import com.example.voicevault.ui.applySystemBarInsets
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
@@ -141,6 +142,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         b = ActivityMainBinding.inflate(layoutInflater)
         setContentView(b.root)
+        b.root.applySystemBarInsets()
 
         chosenFormat = AudioFormat.fromName(prefs.getString("format", "M4A"))
         chosenQuality = AudioQuality.fromName(prefs.getString("quality", "HIGH"))

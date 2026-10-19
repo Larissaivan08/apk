@@ -164,6 +164,9 @@ class RecorderService : Service() {
             LastRecord.result = LastRecord.Fail("Falha ao finalizar a gravação")
             return
         }
+        // id do registro já inserido: se algo falhar depois, ele precisa ser desfeito
+        // para não sobrar um item na lista apontando para um arquivo que não existe.
+        var insertedId: Long? = null
         try {
             runBlocking(Dispatchers.IO) {
                 val dao = AppDb.get(applicationContext).recordingDao()
@@ -174,6 +177,7 @@ class RecorderService : Service() {
                     sizeBytes = source.length(),
                     format = format.name
                 ))
+                insertedId = id
                 val dest = AudioStore(applicationContext).fileFor(id, format)
                 val moved = source.renameTo(dest)
                 if (!moved) {
@@ -182,12 +186,31 @@ class RecorderService : Service() {
                     source.delete()
                 }
                 if (!dest.isFile || dest.length() == 0L) error("Destino não encontrado")
-                dao.byId(id)?.let { dao.update(it.copy(sizeBytes = dest.length())) }
+                // Só ajusta o tamanho final; se falhar, o arquivo já está salvo e o
+                // registro continua válido, então isso não pode derrubar a gravação.
+                runCatching { dao.byId(id)?.let { dao.update(it.copy(sizeBytes = dest.length())) } }
             }
             LastRecord.result = LastRecord.Stopped(duration, outputPath)
         } catch (e: Exception) {
+            Log.e("GravadorSmart", "Falha ao salvar a gravação", e)
+            insertedId?.let { id -> rollbackRecording(id, source) }
             LastRecord.result = LastRecord.Fail("Não foi possível salvar. Confira o armazenamento.")
         }
+    }
+
+    /**
+     * Desfaz uma gravação que entrou no banco mas não chegou inteira ao armazenamento.
+     * O arquivo de destino só é apagado se o temporário ainda existir — assim nunca
+     * removemos a única cópia do áudio.
+     */
+    private fun rollbackRecording(id: Long, source: File) {
+        runCatching {
+            runBlocking(Dispatchers.IO) {
+                val dao = AppDb.get(applicationContext).recordingDao()
+                dao.byId(id)?.let { dao.delete(it) }
+            }
+        }
+        if (source.exists()) runCatching { AudioStore(applicationContext).delete(id) }
     }
 
     @Suppress("DEPRECATION")

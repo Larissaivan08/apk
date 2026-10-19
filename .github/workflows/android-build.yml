@@ -3,6 +3,7 @@ name: Gravador Smart - Android build
 on:
   push:
     branches:
+      - main
       - fix/v3.1
   pull_request:
     branches:
